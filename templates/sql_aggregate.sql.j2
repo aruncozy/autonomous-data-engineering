@@ -1,0 +1,17 @@
+-- Auto-generated BigQuery aggregation: {{ source_table }} → {{ target_table }}
+-- Partition: {{ partition_clause or 'none' }}
+-- Cluster:   {{ cluster_clause or 'none' }}
+
+CREATE OR REPLACE TABLE `{{ target_table }}`
+{% if partition_clause %}
+{{ partition_clause }}
+{% endif %}
+{% if cluster_clause %}
+{{ cluster_clause }}
+{% endif %}
+AS
+SELECT
+    {% for col in columns %}
+    {{ col }}{{ "," if not loop.last }}
+    {% endfor %}
+FROM `{{ source_table }}`;

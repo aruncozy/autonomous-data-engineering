@@ -1,0 +1,72 @@
+sources:
+  - id: "sales_transactions"
+    name: "Sales Transactions"
+    type: "batch"
+    format: "csv"
+    location: "gs://my-data-project-landing/sales/"
+    schedule: "0 */6 * * *"  # every 6 hours
+    schema_hints:
+      primary_key: ["transaction_id"]
+      timestamp_column: "transaction_date"
+      partition_column: "transaction_date"
+    quality:
+      min_score: 0.90
+      critical_columns: ["transaction_id", "amount", "transaction_date"]
+      max_null_ratio: 0.05
+
+  - id: "customer_profiles"
+    name: "Customer Profiles"
+    type: "batch"
+    format: "json"
+    location: "gs://my-data-project-landing/customers/"
+    schedule: "0 2 * * *"  # daily at 2am
+    schema_hints:
+      primary_key: ["customer_id"]
+      timestamp_column: "updated_at"
+      nested_fields: true
+    quality:
+      min_score: 0.85
+      critical_columns: ["customer_id", "email"]
+      max_null_ratio: 0.10
+
+  - id: "inventory_updates"
+    name: "Inventory Updates"
+    type: "stream"
+    format: "json"
+    location: "projects/my-data-project/subscriptions/inventory-stream"
+    schema_hints:
+      primary_key: ["product_id", "warehouse_id"]
+      timestamp_column: "event_time"
+    quality:
+      min_score: 0.80
+      critical_columns: ["product_id", "quantity"]
+      max_null_ratio: 0.02
+
+  - id: "order_events"
+    name: "Order Events CDC"
+    type: "cdc"
+    format: "json"
+    location: "projects/my-data-project/subscriptions/orders-cdc"
+    schema_hints:
+      primary_key: ["order_id"]
+      timestamp_column: "change_timestamp"
+      cdc_type_column: "operation"
+    quality:
+      min_score: 0.95
+      critical_columns: ["order_id", "operation", "change_timestamp"]
+      max_null_ratio: 0.01
+
+  - id: "web_analytics"
+    name: "Web Analytics"
+    type: "batch"
+    format: "parquet"
+    location: "gs://my-data-project-landing/analytics/"
+    schedule: "30 1 * * *"  # daily at 1:30am
+    schema_hints:
+      primary_key: ["session_id", "event_id"]
+      timestamp_column: "event_timestamp"
+      partition_column: "event_date"
+    quality:
+      min_score: 0.80
+      critical_columns: ["session_id", "event_id", "event_timestamp"]
+      max_null_ratio: 0.15

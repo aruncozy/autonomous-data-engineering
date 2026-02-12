@@ -1,0 +1,62 @@
+gcp:
+  project_id: "my-data-project"
+  region: "us-central1"
+  zone: "us-central1-a"
+
+storage:
+  bronze_bucket: "my-data-project-bronze"
+  silver_bucket: "my-data-project-silver"
+  dlq_bucket: "my-data-project-dlq"
+  temp_bucket: "my-data-project-temp"
+
+pubsub:
+  ingestion_topic: "ingestion-events"
+  transformation_topic: "transformation-events"
+  aggregation_topic: "aggregation-events"
+  ingestion_subscription: "ingestion-events-sub"
+  transformation_subscription: "transformation-events-sub"
+  aggregation_subscription: "aggregation-events-sub"
+
+bigquery:
+  bronze_dataset: "bronze"
+  silver_dataset: "silver"
+  gold_dataset: "gold"
+  location: "US"
+
+firestore:
+  state_collection: "agent-states"
+  schema_collection: "schema-versions"
+  checkpoint_ttl_days: 30
+
+agents:
+  ingestion:
+    schema_sample_rows: 1000
+    schema_evolution_strategy: "auto"  # auto | pause | alert
+    max_file_size_mb: 500
+    supported_formats:
+      - csv
+      - json
+      - parquet
+      - avro
+  transformation:
+    quality_threshold: 0.85
+    max_dataflow_workers: 10
+    code_gen_strategy: "hybrid"  # template | gemini | hybrid
+    biglake_connection: "projects/my-data-project/locations/us-central1/connections/biglake-conn"
+  aggregation:
+    query_history_days: 30
+    max_clustering_columns: 4
+    mv_staleness_hours: 24
+    mv_cost_benefit_threshold: 0.3
+
+llm:
+  model: "gemini-2.0-flash"
+  fallback_model: "gemini-1.5-pro"
+  max_output_tokens: 8192
+  temperature: 0.1
+  retry_attempts: 3
+  retry_backoff_seconds: 2
+
+health_check:
+  port: 8080
+  path: "/health"

@@ -1,0 +1,74 @@
+"""Auto-generated Apache Beam streaming pipeline."""
+
+import json
+
+import apache_beam as beam
+from apache_beam.options.pipeline_options import PipelineOptions, StandardOptions
+from apache_beam.transforms.window import FixedWindows
+
+
+def run():
+    options = PipelineOptions(
+        runner="DataflowRunner",
+        project="{{ project_id | default('my-project') }}",
+        region="{{ region | default('us-central1') }}",
+        temp_location="gs://{{ temp_bucket | default('temp-bucket') }}/beam-temp/",
+        staging_location="gs://{{ temp_bucket | default('temp-bucket') }}/beam-staging/",
+    )
+    options.view_as(StandardOptions).streaming = True
+
+    table_schema = {
+        "fields": [
+            {% for col in columns %}
+            {"name": "{{ col }}", "type": "STRING", "mode": "NULLABLE"},
+            {% endfor %}
+        ]
+    }
+
+    with beam.Pipeline(options=options) as p:
+        messages = (
+            p
+            | "ReadPubSub" >> beam.io.ReadFromPubSub(
+                subscription="{{ source_path }}"
+            )
+            | "DecodeJSON" >> beam.Map(lambda msg: json.loads(msg.decode("utf-8")))
+        )
+
+        windowed = (
+            messages
+            | "Window" >> beam.WindowInto(
+                FixedWindows({{ window_seconds | default(300) }})
+            )
+        )
+
+        cleaned = (
+            windowed
+            | "FilterNulls" >> beam.Filter(lambda row: row is not None)
+            | "Standardize" >> beam.Map(standardize)
+        )
+
+        _ = (
+            cleaned
+            | "WriteToBQ" >> beam.io.WriteToBigQuery(
+                "{{ target_table }}",
+                schema=table_schema,
+                write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+                create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED,
+                method=beam.io.WriteToBigQuery.Method.STREAMING_INSERTS,
+            )
+        )
+
+
+def standardize(row: dict) -> dict:
+    """Apply basic type standardization."""
+    cleaned = {}
+    for k, v in row.items():
+        if v is None or (isinstance(v, str) and v.strip() == ""):
+            cleaned[k] = None
+        else:
+            cleaned[k] = str(v).strip()
+    return cleaned
+
+
+if __name__ == "__main__":
+    run()

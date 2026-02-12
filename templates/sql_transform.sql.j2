@@ -1,0 +1,55 @@
+-- Auto-generated BigQuery SQL transform: {{ source_table }} → {{ target_table }}
+-- Cleanse, deduplicate, and standardize data.
+
+{% if primary_key %}
+-- MERGE-based dedup on primary key: {{ primary_key | join(', ') }}
+MERGE `{{ target_table }}` AS target
+USING (
+    SELECT
+        {% for col in columns %}
+        {{ col }}{{ "," if not loop.last }}
+        {% endfor %}
+    FROM (
+        SELECT
+            *,
+            ROW_NUMBER() OVER (
+                PARTITION BY {{ primary_key | join(', ') }}
+                {% if timestamp_column %}
+                ORDER BY {{ timestamp_column }} DESC
+                {% else %}
+                ORDER BY 1
+                {% endif %}
+            ) AS _dedup_rn
+        FROM `{{ source_table }}`
+    )
+    WHERE _dedup_rn = 1
+) AS source
+ON {% for pk in primary_key %}target.{{ pk }} = source.{{ pk }}{{ " AND " if not loop.last }}{% endfor %}
+
+WHEN MATCHED THEN UPDATE SET
+    {% for col in columns %}
+    {% if col not in primary_key %}
+    target.{{ col }} = source.{{ col }}{{ "," if not loop.last }}
+    {% endif %}
+    {% endfor %}
+
+WHEN NOT MATCHED THEN INSERT (
+    {% for col in columns %}
+    {{ col }}{{ "," if not loop.last }}
+    {% endfor %}
+)
+VALUES (
+    {% for col in columns %}
+    source.{{ col }}{{ "," if not loop.last }}
+    {% endfor %}
+);
+
+{% else %}
+-- INSERT-based (no primary key for dedup)
+CREATE OR REPLACE TABLE `{{ target_table }}` AS
+SELECT
+    {% for col in columns %}
+    NULLIF(TRIM(CAST({{ col }} AS STRING)), '') AS {{ col }}{{ "," if not loop.last }}
+    {% endfor %}
+FROM `{{ source_table }}`;
+{% endif %}

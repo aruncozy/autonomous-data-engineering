@@ -1,0 +1,107 @@
+global_rules:
+  completeness:
+    - name: "critical_columns_not_null"
+      description: "Critical columns must not be null"
+      check: "null_ratio"
+      threshold: 0.01
+      severity: "error"
+      apply_to: "critical_columns"
+
+    - name: "general_null_check"
+      description: "General columns should have low null ratio"
+      check: "null_ratio"
+      threshold: 0.20
+      severity: "warning"
+      apply_to: "all_columns"
+
+  uniqueness:
+    - name: "primary_key_unique"
+      description: "Primary key columns must be unique"
+      check: "duplicate_ratio"
+      threshold: 0.0
+      severity: "error"
+      apply_to: "primary_key"
+
+  validity:
+    - name: "timestamp_valid"
+      description: "Timestamp columns must be parseable dates"
+      check: "parse_success_ratio"
+      threshold: 0.99
+      severity: "error"
+      apply_to: "timestamp_columns"
+
+    - name: "numeric_range"
+      description: "Numeric values should be within expected range"
+      check: "range"
+      severity: "warning"
+      apply_to: "numeric_columns"
+
+  freshness:
+    - name: "data_freshness"
+      description: "Data should not be older than configured threshold"
+      check: "max_age_hours"
+      threshold: 48
+      severity: "warning"
+      apply_to: "timestamp_column"
+
+  volume:
+    - name: "row_count_baseline"
+      description: "Row count should be within baseline tolerance"
+      check: "row_count_deviation"
+      threshold: 0.50
+      severity: "warning"
+
+source_rules:
+  sales_transactions:
+    - name: "positive_amount"
+      description: "Transaction amount must be positive"
+      check: "custom_sql"
+      sql: "SELECT COUNT(*) FROM {table} WHERE amount <= 0"
+      threshold: 0
+      severity: "error"
+
+    - name: "valid_currency"
+      description: "Currency code must be valid ISO 4217"
+      check: "enum_membership"
+      column: "currency"
+      allowed_values: ["USD", "EUR", "GBP", "JPY", "CAD", "AUD"]
+      severity: "warning"
+
+  customer_profiles:
+    - name: "valid_email"
+      description: "Email must match standard pattern"
+      check: "regex"
+      column: "email"
+      pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+      severity: "warning"
+
+    - name: "valid_country"
+      description: "Country code must be 2-letter ISO"
+      check: "regex"
+      column: "country_code"
+      pattern: "^[A-Z]{2}$"
+      severity: "warning"
+
+  order_events:
+    - name: "valid_operation"
+      description: "CDC operation must be INSERT, UPDATE, or DELETE"
+      check: "enum_membership"
+      column: "operation"
+      allowed_values: ["INSERT", "UPDATE", "DELETE"]
+      severity: "error"
+
+    - name: "order_total_positive"
+      description: "Order total must be non-negative"
+      check: "custom_sql"
+      sql: "SELECT COUNT(*) FROM {table} WHERE total_amount < 0"
+      threshold: 0
+      severity: "error"
+
+scoring:
+  weights:
+    completeness: 0.30
+    uniqueness: 0.25
+    validity: 0.25
+    freshness: 0.10
+    volume: 0.10
+  pass_threshold: 0.85
