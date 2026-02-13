@@ -16,7 +16,7 @@ class SchemaRegistry:
     """Store, version, and compare schemas in Firestore."""
 
     def __init__(self, project_id: str, collection: str = "schema-versions") -> None:
-        self._db = firestore.Client(project=project_id)
+        self._db = firestore.Client(project=project_id, database="agent-db")
         self._collection = collection
 
     # ------------------------------------------------------------------

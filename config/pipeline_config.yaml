@@ -1,13 +1,13 @@
 gcp:
-  project_id: "my-data-project"
+  project_id: "ctoteam"
   region: "us-central1"
   zone: "us-central1-a"
 
 storage:
-  bronze_bucket: "my-data-project-bronze"
-  silver_bucket: "my-data-project-silver"
-  dlq_bucket: "my-data-project-dlq"
-  temp_bucket: "my-data-project-temp"
+  bronze_bucket: "ctoteam-bronze"
+  silver_bucket: "ctoteam-silver"
+  dlq_bucket: "ctoteam-dlq"
+  temp_bucket: "ctoteam-temp"
 
 pubsub:
   ingestion_topic: "ingestion-events"
@@ -42,7 +42,7 @@ agents:
     quality_threshold: 0.85
     max_dataflow_workers: 10
     code_gen_strategy: "hybrid"  # template | gemini | hybrid
-    biglake_connection: "projects/my-data-project/locations/us-central1/connections/biglake-conn"
+    biglake_connection: "projects/ctoteam/locations/us-central1/connections/biglake-conn"
   aggregation:
     query_history_days: 30
     max_clustering_columns: 4
@@ -58,5 +58,5 @@ llm:
   retry_backoff_seconds: 2
 
 health_check:
-  port: 8080
+  port: 8090
   path: "/health"

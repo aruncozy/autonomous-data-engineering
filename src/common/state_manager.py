@@ -16,7 +16,7 @@ class StateManager:
     """Persist agent state in Firestore for crash-recovery."""
 
     def __init__(self, project_id: str, collection: str = "agent-states") -> None:
-        self._db = firestore.Client(project=project_id)
+        self._db = firestore.Client(project=project_id, database="agent-db")
         self._collection = collection
 
     # ------------------------------------------------------------------

@@ -46,7 +46,7 @@ class LandingManager:
         src_bucket = self._storage.bucket(src_bucket_name)
         src_blob = src_bucket.blob(src_blob_name)
 
-        self._storage.copy_blob(src_blob, self._bucket, new_name=dest_path)
+        src_bucket.copy_blob(src_blob, self._bucket, new_name=dest_path)
         dest_uri = f"gs://{self._bucket.name}/{dest_path}"
         logger.info("Landed %s → %s", source_gcs_path, dest_uri)
 
@@ -121,7 +121,7 @@ class LandingManager:
         _, blob_path = _parse_gcs(gcs_path)
         blob = self._bucket.blob(blob_path)
         archive_bucket = self._storage.bucket(archive_bucket_name)
-        self._storage.copy_blob(blob, archive_bucket, new_name=blob_path)
+        self._bucket.copy_blob(blob, archive_bucket, new_name=blob_path)
         blob.delete()
         logger.info("Archived %s → gs://%s/%s", gcs_path, archive_bucket_name, blob_path)
 
